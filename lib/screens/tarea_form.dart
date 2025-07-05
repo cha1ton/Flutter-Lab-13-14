@@ -26,8 +26,6 @@ class _TareaFormScreenState extends State<TareaFormScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Si es edición, precargar valores
     if (widget.tarea != null) {
       final tarea = widget.tarea!;
       _tituloController.text = tarea.titulo;
@@ -67,6 +65,19 @@ class _TareaFormScreenState extends State<TareaFormScreen> {
       initialDate: _fechaSeleccionada,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: ColorScheme.light(
+              primary: Colors.lightBlue[400]!,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+            dialogBackgroundColor: Colors.white,
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null) {
       setState(() {
@@ -83,79 +94,155 @@ class _TareaFormScreenState extends State<TareaFormScreen> {
     super.dispose();
   }
 
+  Widget _buildSectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Text(text,
+          style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+              color: Colors.lightBlue[700])),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final esEdicion = widget.tarea != null;
 
     return Scaffold(
-      appBar: AppBar(title: Text(esEdicion ? 'Editar Tarea' : 'Nueva Tarea')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(
+        title: Text(esEdicion ? 'Editar Tarea' : 'Nueva Tarea'),
+        backgroundColor: Colors.lightBlue.shade300,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+        ),
+      ),
+      backgroundColor: Colors.grey[50],
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         child: Form(
           key: _formKey,
-          child: ListView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _buildSectionTitle('Título'),
               TextFormField(
                 controller: _tituloController,
-                decoration: InputDecoration(labelText: 'Título'),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  hintText: 'Ejemplo: Comprar leche',
+                  prefixIcon: Icon(Icons.title, color: Colors.lightBlue[400]),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Campo obligatorio' : null,
+                    value == null || value.trim().isEmpty ? 'Requerido' : null,
               ),
-              SizedBox(height: 10),
+              _buildSectionTitle('Descripción'),
               TextFormField(
                 controller: _descripcionController,
-                decoration: InputDecoration(labelText: 'Descripción'),
-                maxLines: 2,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  hintText: 'Detalles de la tarea',
+                  prefixIcon: Icon(Icons.description, color: Colors.lightBlue[400]),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
               ),
-              SizedBox(height: 10),
+              _buildSectionTitle('Prioridad (1.0 a 5.0)'),
               TextFormField(
                 controller: _prioridadController,
-                decoration: InputDecoration(labelText: 'Prioridad (1.0 - 5.0)'),
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  hintText: 'Ejemplo: 3.5',
+                  prefixIcon: Icon(Icons.flag, color: Colors.lightBlue[400]),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
                 validator: (value) {
-                  final val = double.tryParse(value ?? '');
+                  if (value == null || value.trim().isEmpty) return 'Requerido';
+                  final val = double.tryParse(value);
                   if (val == null || val < 1.0 || val > 5.0) {
                     return 'Debe estar entre 1.0 y 5.0';
                   }
                   return null;
                 },
               ),
-              SizedBox(height: 10),
+              _buildSectionTitle('Categoría'),
               DropdownButtonFormField<String>(
                 value: _categoriaSeleccionada,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: Icon(Icons.category, color: Colors.lightBlue[400]),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _categoriaSeleccionada = value!;
+                  });
+                },
                 items: _categorias
                     .map((cat) => DropdownMenuItem(
                           value: cat,
                           child: Text(cat),
                         ))
                     .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _categoriaSeleccionada = value!;
-                  });
-                },
-                decoration: InputDecoration(labelText: 'Categoría'),
               ),
-              SizedBox(height: 10),
-              SwitchListTile(
-                title: Text('Completado'),
-                value: _completado,
-                onChanged: (value) {
-                  setState(() {
-                    _completado = value;
-                  });
-                },
-              ),
-              SizedBox(height: 10),
-              ListTile(
-                title: Text('Fecha límite: ${_fechaSeleccionada.toLocal().toString().split(' ')[0]}'),
-                trailing: Icon(Icons.calendar_today),
+              _buildSectionTitle('Fecha'),
+              InkWell(
                 onTap: _seleccionarFecha,
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    prefixIcon: Icon(Icons.calendar_today,
+                        color: Colors.lightBlue[400]),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  child: Text(
+                    '${_fechaSeleccionada.year}-${_fechaSeleccionada.month.toString().padLeft(2, '0')}-${_fechaSeleccionada.day.toString().padLeft(2, '0')}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ),
               ),
               SizedBox(height: 20),
+              SwitchListTile(
+                title: Text(
+                  'Completado',
+                  style: TextStyle(color: Colors.lightBlue[700]),
+                ),
+                value: _completado,
+                activeColor: Colors.lightBlue[400],
+                onChanged: (val) {
+                  setState(() {
+                    _completado = val;
+                  });
+                },
+              ),
+              SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _guardarTarea,
-                child: Text(esEdicion ? 'Actualizar' : 'Guardar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.lightBlue[400],
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                child: Text(
+                  esEdicion ? 'Actualizar' : 'Guardar',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
               ),
             ],
           ),
